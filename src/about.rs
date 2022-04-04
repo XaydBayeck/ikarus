@@ -2,13 +2,13 @@ use std::io::Cursor;
 
 use rocket::{
     http::ContentType,
-    response::{content::Json, Responder},
+    response::Responder,
     Response,
 };
 use serde::{Deserialize, Serialize};
 
 #[get("/About")]
-pub fn about_route() -> Json<AboutInfor> {
+pub fn about_route() -> AboutInfor {
     let aboutme = AboutInfor {
         user: String::from("Sid"),
         quote: String::from("Well, you are right right right."),
@@ -16,7 +16,7 @@ pub fn about_route() -> Json<AboutInfor> {
         github: String::from("https://github.com/XaydBayeck"),
     };
 
-    Json(aboutme)
+    aboutme
 }
 
 #[derive(Debug, Serialize, Deserialize)]

@@ -1,18 +1,21 @@
 mod about;
 mod blogs;
+mod database;
 mod markdown;
 mod tags;
 mod user;
 
 use crate::about::about_route;
+use crate::database::hello;
+use database::Database;
 use rocket::{fs::FileServer, response::Redirect};
 
 #[macro_use]
 extern crate rocket;
 
-// static
+// [x] static
 
-// Index
+// [x] Index
 #[get("/")]
 fn index() -> Redirect {
     Redirect::to(uri!("/public/index.html"))
@@ -26,24 +29,27 @@ fn favicon() -> Redirect {
 
 // TODO 404Page
 
-// Home:
+// [x] Home:
 
-// About:
+// [x] About:
 
-// Tags:
+// [ ] Tags:
 
-// Blogs:
+// [ ] Blogs:
 
-// Login:
+// [ ] Login:
 
-// UpMK:
+// [ ] UpMK:
 
 // TODO
 
-#[launch]
-fn rocket() -> _ {
+#[rocket::main]
+async fn main() -> Result<(), rocket::Error> {
     rocket::build()
-        .mount("/", routes![favicon, index, about_route])
+        .mount("/", routes![favicon, index, about_route, hello])
         .mount("/home", routes![index])
         .mount("/public", FileServer::from("static"))
+        .manage(Database::new("db/sqlx/db.sqlite").await.unwrap())
+        .launch()
+        .await
 }
