@@ -1,9 +1,9 @@
 pub mod model;
 
-use rocket::{http::Status, State};
-use sqlx::{sqlite::SqlitePoolOptions, SqlitePool};
-
 use self::model::User;
+use rocket::http::Status;
+use rocket::State;
+use sqlx::{sqlite::SqlitePoolOptions, SqlitePool};
 
 pub struct Database(SqlitePool);
 
