@@ -1,3 +1,4 @@
+use serde::{Deserialize, Serialize};
 use sqlx::{FromRow, Result, SqlitePool};
 
 #[derive(Debug, FromRow)]
@@ -15,4 +16,14 @@ impl User {
 
         Ok(user)
     }
+}
+
+#[derive(Debug, FromRow, Serialize, Deserialize)]
+pub struct Blog {
+    pub id: i32,
+    pub title: String,
+    pub tags: Option<Vec<String>>,
+    pub create_time: String,
+    pub update_time: Option<String>,
+    pub body: String,
 }
