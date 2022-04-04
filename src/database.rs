@@ -1,6 +1,6 @@
 pub mod model;
 
-use self::model::User;
+use self::model::{Models, User};
 use rocket::http::Status;
 use rocket::State;
 use sqlx::{sqlite::SqlitePoolOptions, SqlitePool};
@@ -16,7 +16,7 @@ impl Database {
 
 #[get("/<id>")]
 pub async fn hello(pool: &State<Database>, id: i32) -> Result<String, Status> {
-    let user = User::find_by_id(id, &pool.0).await;
+    let user = User::find_by(&User::filter_sql("user", "id"), id, &pool.0).await;
 
     match user {
         Ok(user) => Ok(format!("Hello {}!", &user.name)),

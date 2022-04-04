@@ -1,22 +1,16 @@
 use std::io::Cursor;
 
-use rocket::{
-    http::ContentType,
-    response::Responder,
-    Response,
-};
+use rocket::{http::ContentType, response::Responder, Response};
 use serde::{Deserialize, Serialize};
 
 #[get("/About")]
 pub fn about_route() -> AboutInfor {
-    let aboutme = AboutInfor {
+    AboutInfor {
         user: String::from("Sid"),
         quote: String::from("Well, you are right right right."),
         email: String::from("SidBayeck@outlook.com"),
         github: String::from("https://github.com/XaydBayeck"),
-    };
-
-    aboutme
+    }
 }
 
 #[derive(Debug, Serialize, Deserialize)]
