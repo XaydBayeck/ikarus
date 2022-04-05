@@ -7,7 +7,7 @@ mod user;
 
 use crate::about::about_route;
 use crate::database::hello;
-use database::Database;
+use database::DbFairing;
 use rocket::{fs::FileServer, response::Redirect};
 
 #[macro_use]
@@ -43,13 +43,22 @@ fn favicon() -> Redirect {
 
 // TODO
 
-#[rocket::main]
-async fn main() -> Result<(), rocket::Error> {
+// #[rocket::main]
+// async fn main() -> Result<(), rocket::Error> {
+//     rocket::build()
+//         .mount("/", routes![favicon, index, about_route, hello])
+//         .mount("/home", routes![index])
+//         .mount("/public", FileServer::from("static"))
+//         .manage(Database::new("db/sqlx/db.sqlite").await.unwrap())
+//         .launch()
+//         .await
+// }
+
+#[launch]
+fn rocket() -> _ {
     rocket::build()
+        .attach(DbFairing::with_name("database"))
         .mount("/", routes![favicon, index, about_route, hello])
         .mount("/home", routes![index])
         .mount("/public", FileServer::from("static"))
-        .manage(Database::new("db/sqlx/db.sqlite").await.unwrap())
-        .launch()
-        .await
 }
