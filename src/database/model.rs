@@ -53,3 +53,18 @@ pub struct Blog {
 
 #[async_trait]
 impl Models for Blog {}
+
+impl Blog {
+    pub async fn insert(&self, pool: &SqlitePool) -> Result<()> {
+        sqlx::query("insert into blog value ($1, $2, $3, $4, $5, $6)")
+            .bind(self.id)
+            .bind(&self.title)
+            .bind(&self.tags)
+            .bind(&self.create_time)
+            .bind(&self.update_time)
+            .bind(&self.body)
+            .execute(pool)
+            .await?;
+        Ok(())
+    }
+}
