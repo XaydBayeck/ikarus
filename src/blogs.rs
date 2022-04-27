@@ -1,3 +1,4 @@
+use chrono::{DateTime, Utc};
 use rocket::{
     http::Status,
     response::{status, Redirect},
@@ -5,17 +6,19 @@ use rocket::{
     State,
 };
 use serde::{Deserialize, Serialize};
-use sqlx::{FromRow, SqlitePool};
+pub use sqlx::{Decode, Encode, FromRow, Sqlite, Type};
 
 use crate::database::Database;
+
+type Strings = sqlx::types::Json<Vec<String>>;
 
 #[derive(Debug, FromRow, Serialize, Deserialize)]
 pub struct Blog {
     pub id: i32,
     pub title: String,
-    pub tags: Option<String>,
-    pub create_time: String,
-    pub update_time: Option<String>,
+    pub tags: Option<Strings>,
+    pub create_time: DateTime<Utc>,
+    pub update_time: Option<DateTime<Utc>>,
     pub body: String,
 }
 
@@ -23,23 +26,8 @@ pub struct Blog {
 pub struct BlogInfo {
     pub id: i32,
     pub title: String,
-    pub tags: Option<String>,
-    pub create_time: String,
-}
-
-impl Blog {
-    pub async fn insert(&self, pool: &SqlitePool) -> sqlx::Result<()> {
-        sqlx::query("insert into blog values ($1, $2, $3, $4, $5, $6)")
-            .bind(self.id)
-            .bind(&self.title)
-            .bind(&self.tags)
-            .bind(&self.create_time)
-            .bind(&self.update_time)
-            .bind(&self.body)
-            .execute(pool)
-            .await?;
-        Ok(())
-    }
+    pub tags: Option<Strings>,
+    pub create_time: DateTime<Utc>,
 }
 
 #[get("/blog/article/<name>")]
@@ -48,8 +36,20 @@ fn markdown_request(name: String) -> Redirect {
 }
 
 #[post("/up", format = "json", data = "<blog>")]
-pub async fn add_blog(blog: Json<Blog>, pool: &State<Database>) {
-    blog.insert(pool.db());
+pub async fn add_blog(blog: Json<Blog>, pool: &State<Database>) -> Status {
+    match sqlx::query("insert into blog values ($1, $2, $3, $4, $5, $6)")
+        .bind(blog.id)
+        .bind(&blog.title)
+        .bind(&blog.tags)
+        .bind(&blog.create_time)
+        .bind(&blog.update_time)
+        .bind(&blog.body)
+        .execute(pool.db())
+        .await
+    {
+        Ok(_) => Status::Created,
+        Err(_) => Status::Conflict,
+    }
 }
 
 #[get("/delet/<id>")]
