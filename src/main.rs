@@ -6,6 +6,7 @@ mod tags;
 mod user;
 
 use crate::about::about_route;
+use crate::blogs::{add_blog, delet_blog_by_id, get_blog_by_id, get_blog_list, update_blog};
 use crate::database::hello;
 use database::DbFairing;
 use rocket::{fs::FileServer, response::Redirect};
@@ -55,10 +56,20 @@ fn favicon() -> Redirect {
 // }
 
 #[launch]
-fn rocket() -> _ {
+fn rocket() -> rocket::Rocket<rocket::Build> {
     rocket::build()
         .attach(DbFairing::with_name("database"))
         .mount("/", routes![favicon, index, about_route, hello])
         .mount("/home", routes![index])
+        .mount(
+            "/blog",
+            routes![
+                add_blog,
+                delet_blog_by_id,
+                update_blog,
+                get_blog_by_id,
+                get_blog_list
+            ],
+        )
         .mount("/public", FileServer::from("static"))
 }

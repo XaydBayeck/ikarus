@@ -1,12 +1,11 @@
-pub mod model;
-
 use std::marker::PhantomData;
 
-use self::model::{Models, User};
 use rocket::fairing::{self, Info, Kind};
 use rocket::log::private::error;
 use rocket::{fairing::Fairing, http::Status};
 use rocket::{Build, Rocket, State};
+use serde::{Deserialize, Serialize};
+use sqlx::FromRow;
 use sqlx::{sqlite::SqlitePoolOptions, SqlitePool};
 
 pub struct Database(SqlitePool);
@@ -15,6 +14,10 @@ impl Database {
     pub async fn new(url: &str) -> Result<Self, sqlx::Error> {
         let pool = SqlitePoolOptions::new().connect(url).await?;
         Ok(Self(pool))
+    }
+
+    pub fn db(&self) -> &SqlitePool {
+        &self.0
     }
 }
 
@@ -50,9 +53,18 @@ impl Fairing for DbFairing {
     }
 }
 
+#[derive(Debug, FromRow, Serialize, Deserialize)]
+struct User {
+    id: i32,
+    name: String,
+}
+
 #[get("/<id>")]
 pub async fn hello(pool: &State<Database>, id: i32) -> Result<String, Status> {
-    let user = User::find_by(&User::filter_sql("user", "id"), id, &pool.0).await;
+    let user = sqlx::query_as::<_, User>("select * from user where id = $1")
+        .bind(id)
+        .fetch_one(&pool.0)
+        .await;
 
     match user {
         Ok(user) => Ok(format!("Hello {}!", &user.name)),
