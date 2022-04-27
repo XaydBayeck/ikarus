@@ -95,12 +95,34 @@ where id = $6",
     }
 }
 
-#[get("/get/<id>")]
-pub async fn get_blog_by_id(id: i32, pool: &State<Database>) -> Result<Json<Blog>, Status> {
-    let blog = sqlx::query_as::<_, Blog>("select * from blog where id = $1")
-        .bind(id)
-        .fetch_one(pool.db())
-        .await;
+#[get("/get/select?<id>&<title>")]
+pub async fn get_blog_by_id(
+    id: Option<i32>,
+    title: Option<String>,
+    pool: &State<Database>,
+) -> Result<Json<Blog>, Status> {
+    let blog = match (id, title) {
+        (None, None) => Err(sqlx::error::Error::RowNotFound),
+        (None, Some(title)) => {
+            sqlx::query_as::<_, Blog>("select * from blog where title = $1")
+                .bind(title)
+                .fetch_one(pool.db())
+                .await
+        }
+        (Some(id), None) => {
+            sqlx::query_as::<_, Blog>("select * from blog where id = $1")
+                .bind(id)
+                .fetch_one(pool.db())
+                .await
+        }
+        (Some(id), Some(title)) => {
+            sqlx::query_as::<_, Blog>("select * from blog where id = $1 and title = $2")
+                .bind(id)
+                .bind(title)
+                .fetch_one(pool.db())
+                .await
+        }
+    };
 
     match blog {
         Ok(blog) => Ok(Json::from(blog)),
@@ -108,11 +130,23 @@ pub async fn get_blog_by_id(id: i32, pool: &State<Database>) -> Result<Json<Blog
     }
 }
 
-#[get("/get/list")]
-pub async fn get_blog_list(pool: &State<Database>) -> Result<Json<Vec<BlogInfo>>, Status> {
-    let blogs = sqlx::query_as::<_, BlogInfo>("select id,title,tags,create_time from blog")
+#[get("/get/list?<tag>")]
+pub async fn get_blog_list(
+    tag: Option<String>,
+    pool: &State<Database>,
+) -> Result<Json<Vec<BlogInfo>>, Status> {
+    let blogs = if let Some(tag) = tag {
+        sqlx::query_as::<_, BlogInfo>(
+            "select id, title, tags, create_time from blog where tags glob $1",
+        )
+        .bind(format!("*\"{}*\"", tag))
         .fetch_all(pool.db())
-        .await;
+        .await
+    } else {
+        sqlx::query_as::<_, BlogInfo>("select id,title,tags,create_time from blog")
+            .fetch_all(pool.db())
+            .await
+    };
 
     match blogs {
         Ok(blogs) => Ok(Json::from(blogs)),
