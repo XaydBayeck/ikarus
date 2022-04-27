@@ -1,4 +1,9 @@
-use rocket::{http::Status, response::Redirect, serde::json::Json, State};
+use rocket::{
+    http::Status,
+    response::{status, Redirect},
+    serde::json::Json,
+    State,
+};
 use serde::{Deserialize, Serialize};
 use sqlx::{FromRow, SqlitePool};
 
@@ -48,17 +53,28 @@ pub async fn add_blog(blog: Json<Blog>, pool: &State<Database>) {
 }
 
 #[get("/delet/<id>")]
-pub async fn delet_blog_by_id(id: i32, pool: &State<Database>) -> Status {
-    sqlx::query("delet from blog where id = $1")
+pub async fn delet_blog_by_id(
+    id: i32,
+    pool: &State<Database>,
+) -> Result<status::Accepted<()>, status::NotFound<String>> {
+    match sqlx::query("delet from blog where id = $1")
         .bind(id)
         .execute(pool.db())
-        .await;
-    Status::from_code(200).unwrap()
+        .await
+    {
+        Ok(_) => Ok(status::Accepted::<()>(None)),
+        Err(_) => Err(status::NotFound(
+            "Not find object you want to delet!".to_string(),
+        )),
+    }
 }
 
 #[post("/update", format = "json", data = "<blog>")]
-pub async fn update_blog(blog: Json<Blog>, pool: &State<Database>) {
-    sqlx::query(
+pub async fn update_blog(
+    blog: Json<Blog>,
+    pool: &State<Database>,
+) -> Result<status::Accepted<()>, status::NotFound<String>> {
+    match sqlx::query(
         "update blog
 set title = $1, tags = $2, create_time = $3, update_time = $4, body = $5
 where id = $6",
@@ -70,7 +86,13 @@ where id = $6",
     .bind(&blog.body)
     .bind(blog.id)
     .execute(pool.db())
-    .await;
+    .await
+    {
+        Ok(_) => Ok(status::Accepted::<()>(None)),
+        Err(_) => Err(status::NotFound(
+            "May be you should add it before.".to_string(),
+        )),
+    }
 }
 
 #[get("/get/<id>")]
